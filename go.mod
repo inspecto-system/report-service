@@ -12,7 +12,7 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.20.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.12.0
-	github.com/pdfcpu/pdfcpu v0.16.3
+	github.com/pdfcpu/pdfcpu v0.16.4
 	github.com/testcontainers/testcontainers-go v0.45.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.45.0
 )
