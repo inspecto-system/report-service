@@ -10,6 +10,9 @@ import (
 	"os/signal"
 	"syscall"
 
+	// Time zones are embedded: the alpine image has no zoneinfo, and reports show local dates.
+	_ "time/tzdata"
+
 	"github.com/inspecto-system/report-service/internal/app"
 	"github.com/inspecto-system/report-service/internal/config"
 	"github.com/inspecto-system/report-service/internal/logging"

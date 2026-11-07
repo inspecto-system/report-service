@@ -12,19 +12,17 @@ type Code string
 
 // Error codes used by the service.
 const (
-	CodeValidation           Code = "VALIDATION_ERROR"
-	CodeUnsupportedMediaType Code = "UNSUPPORTED_MEDIA_TYPE"
-	CodeImageTooLarge        Code = "IMAGE_TOO_LARGE"
-	CodeDimensionsTooLarge   Code = "IMAGE_DIMENSIONS_TOO_LARGE"
-	CodeUnauthenticated      Code = "UNAUTHENTICATED"
-	CodeTokenExpired         Code = "TOKEN_EXPIRED"
-	CodeForbidden            Code = "FORBIDDEN"
-	CodeNotFound             Code = "NOT_FOUND"
-	CodeResourceInUse        Code = "RESOURCE_IN_USE"
-	CodeDependencyDown       Code = "DEPENDENCY_UNAVAILABLE"
-	CodeInternal             Code = "INTERNAL_ERROR"
-	problemTypeBase               = "https://inspecto.dev/problems/"
-	problemContentType            = "application/problem+json"
+	CodeValidation      Code = "VALIDATION_ERROR"
+	CodeUnauthenticated Code = "UNAUTHENTICATED"
+	CodeTokenExpired    Code = "TOKEN_EXPIRED"
+	CodeForbidden       Code = "FORBIDDEN"
+	CodeNotFound        Code = "NOT_FOUND"
+	CodeInvalidState    Code = "INVALID_STATE_TRANSITION"
+	CodeReportNotReady  Code = "REPORT_NOT_READY"
+	CodeDependencyDown  Code = "DEPENDENCY_UNAVAILABLE"
+	CodeInternal        Code = "INTERNAL_ERROR"
+	problemTypeBase          = "https://inspecto.dev/problems/"
+	problemContentType       = "application/problem+json"
 )
 
 // FieldViolation is a single invalid field of a request.
@@ -48,6 +46,14 @@ type Problem struct {
 // stack traces or SQL (SECURITY.md §4).
 func WriteProblem(w http.ResponseWriter, r *http.Request, status int, code Code, detail string) {
 	writeProblem(w, r, Problem{Status: status, Code: code, Detail: detail})
+}
+
+// writeInvalid reports invalid request fields as 400 VALIDATION_ERROR.
+func writeInvalid(w http.ResponseWriter, r *http.Request, violations ...FieldViolation) {
+	writeProblem(w, r, Problem{
+		Status: http.StatusBadRequest, Code: CodeValidation,
+		Detail: "Request contains invalid fields", Errors: violations,
+	})
 }
 
 func writeProblem(w http.ResponseWriter, r *http.Request, problem Problem) {
