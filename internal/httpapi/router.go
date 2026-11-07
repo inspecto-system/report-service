@@ -21,11 +21,15 @@ type Pinger interface {
 type Dependencies struct {
 	Logger *slog.Logger
 	// Ready lists the dependencies checked by /health/ready.
-	Ready []Pinger
+	Ready    []Pinger
+	Verifier TokenVerifier
+	// Services verifies service tokens of /internal/** (not routed by nginx, ADR-013).
+	Services ServiceVerifier
+	Reports  ReportService
 }
 
-// NewRouter builds the HTTP handler of the service. Report endpoints under /api/v1 (routed by nginx,
-// ADR-013) and /internal/v1 (service tokens only) arrive with T-402.
+// NewRouter builds the HTTP handler of the service. External endpoints are served under /api/v1,
+// as routed by nginx (ADR-013); /internal/v1 accepts only service tokens.
 func NewRouter(deps Dependencies) http.Handler {
 	r := chi.NewRouter()
 	r.Use(withRequestID, withSecurityHeaders, withAccessLog(deps.Logger), withRecovery(deps.Logger))
@@ -39,6 +43,16 @@ func NewRouter(deps Dependencies) http.Handler {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "UP"})
 	})
 	r.Get("/health/ready", readiness(deps.Logger, deps.Ready))
+
+	reports := reportHandlers{reports: deps.Reports, logger: deps.Logger}
+	r.Route("/api/v1/reports", func(r chi.Router) {
+		r.Use(authenticated(deps.Verifier))
+		r.Post("/", reports.request)
+		r.Get("/", reports.list)
+		r.Get("/{reportId}", reports.get)
+		r.Get("/{reportId}/file", reports.file)
+	})
+	r.With(serviceAuthenticated(deps.Services, ScopeReportsManage)).Delete("/internal/v1/reports", reports.deleteInBulk)
 	return r
 }
 
